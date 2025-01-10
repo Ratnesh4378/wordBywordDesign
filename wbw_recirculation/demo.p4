@@ -260,8 +260,8 @@ struct ingress_header_t {
     ethernet_t              ethernet;
     arp_t                   arp;
     ipv4_t                  ipv4;
-    tcp_t                   tcp;
     rclt_t                  rclt;           // changes
+    tcp_t                   tcp;
     tcp_opt_t               tcp_op;
 
     fixed_parse_t           fixed_parse;
@@ -326,7 +326,15 @@ control IngressDeparser(
             if (ig_dprsr_md.mirror_type == 1){
                 mirror.emit<mirror_h>(ig_md.ing_mir_ses, {ig_md.pkt_type});
             }
-            packet.emit(hdr);
+            // packet.emit(hdr);
+            packet.emit(hdr.bridged_meta);
+            packet.emit(hdr.ethernet);
+            packet.emit(hdr.arp);
+            packet.emit(hdr.ipv4);
+            packet.emit(hdr.rclt);
+            packet.emit(hdr.tcp); 
+            packet.emit(hdr.tcp_op);
+
         }
     // apply {
     //     packet.emit(hdr);
@@ -620,8 +628,8 @@ parser IngressParser(
 
     state parse_key_0_l24 {
         packet.extract(hdr.key_0_l8);
-        packet.extract(hdr.key_0_l16);
-        transition parse_val_0_0;
+        // packet.extract(hdr.key_0_l16);   // changes_2
+        transition parse_key_0_l16;
     }
 
     state parse_key_0_l32 {
@@ -770,8 +778,8 @@ parser IngressParser(
 
     state parse_val_0_l24 {
         packet.extract(hdr.val_0_l8);
-        packet.extract(hdr.val_0_l16);
-        transition parse_key_1_0;
+        // packet.extract(hdr.val_0_l16);   // changes_2
+        transition parse_val_0_l16;
     }
 
     state parse_val_0_l32 {
@@ -911,8 +919,8 @@ parser IngressParser(
 
     state parse_key_1_l24 {
         packet.extract(hdr.key_1_l8);
-        packet.extract(hdr.key_1_l16);
-        transition parse_val_1_0;
+        // packet.extract(hdr.key_1_l16);  // changes_2
+        transition parse_key_1_l16;
     }
 
     state parse_key_1_l32 {
@@ -1061,8 +1069,8 @@ parser IngressParser(
 
     state parse_val_1_l24 {
         packet.extract(hdr.val_1_l8);
-        packet.extract(hdr.val_1_l16);
-        transition parse_key_2_0;
+        // packet.extract(hdr.val_1_l16); // changes_2
+        transition parse_val_1_l16;
     }
 
     state parse_val_1_l32 {
@@ -1088,6 +1096,7 @@ control EgressControl(
         inout egress_intrinsic_metadata_for_output_port_t eg_intr_oport_md) {
     apply {
         // Do nothing
+        hdr.bridged_meta.setInvalid();
     }
 }
 
@@ -1128,13 +1137,37 @@ control IngressControl(
     // Register<bit<16>, bit<16>>(65536)    r_val_1_l16;
     // Register<bit<8>, bit<16>>(65536)    r_val_1_l8;
 
-    Register<bit<32>,bit<8>>(1) check0;  // debug
-    Register<bit<32>,bit<8>>(1) check1;  // debug
-    Register<bit<32>,bit<8>>(1) check2;  // debug
+    // Register<bit<32>,bit<8>>(1) check0;  // debug
+    // Register<bit<32>,bit<8>>(1) check1;  // debug
+    // Register<bit<32>,bit<8>>(1) check2;  // debug
+
+    // Register<bit<8>,bit<8>>(1) regD;  // debug
+    // Register<bit<8>,bit<8>>(1) regk0;  // debug
+    // Register<bit<8>,bit<8>>(1) regk1;  // debug
+    // Register<bit<8>,bit<8>>(1) regk2;  // debug
+    // Register<bit<32>,bit<8>>(1) regA;  // debug
+    // Register<bit<32>,bit<8>>(1) regB;  // debug
+
+    // Register<bit<32>,bit<8>>(1) d0;  // debug
+    // Register<bit<32>,bit<8>>(1) d1;  // debug
+    // Register<bit<32>,bit<8>>(1) d2;  // debug
+    // Register<bit<16>,bit<8>>(1) d3;  // debug
+    // Register<bit<32>,bit<8>>(1) d4;  // debug
+    // Register<bit<8>,bit<8>>(1) d5;  // debug
+    // Register<bit<8>,bit<8>>(1) d6;  // debug
+    // Register<bit<16>,bit<8>>(1) d7;  // debug
+    // Register<bit<16>,bit<8>>(1) d8;  // debug
+    // Register<bit<32>,bit<8>>(1) d9;  // debug
     
     Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)c_tot_cnt;
-
-    Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)rclt_tot_cnt; // debug
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)cnt2;
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)cnt3;
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)cnt4;
+    //     Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)cnt5;
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)cnt6;
+    Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)rclt_tot_cnt;
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)dbug; // debug
+    // Counter<bit<32>, bit<16>>(65536, CounterType_t.PACKETS_AND_BYTES)dbug1; // debug
     action a_nop() {}  // changes
 
     action a_arp(bit<48> ifaceMac){
@@ -1158,6 +1191,8 @@ control IngressControl(
     
         // Disabling l3 table. This need not to be done bcz arp packets doesn't have ipv4
         // l3_disabled = true;
+        hdr.bridged_meta.setValid();
+        hdr.bridged_meta.pkt_type = PACKET_TYPE_NORMAL;
     }
 
     table t_arp {
@@ -1211,6 +1246,9 @@ control IngressControl(
 // *********************** (changes) ************************************************
 
     action a_setup_mirror_rclt(PortId_t egressPort, PortId_t iface_rclt) {
+        // cnt2.count(0); //debug
+        bit<32> x=hdr.ethernet.dstAddr[31:0];
+        // regA.write(0,x);
         // By checking this field we will clone packet in ingress deparser
         ig_dprsr_md.mirror_type = 1;
         // This field will be appended at the beggining of the mirrored packet
@@ -1252,7 +1290,21 @@ control IngressControl(
 
         // #3: Saving the extracted values for direct match in rclt header
 
-    }      
+    } 
+
+    action a_retrive_state(){
+        // Egress parser and deparser always remove this field. So need to
+        // enable this
+        hdr.bridged_meta.setValid();
+        hdr.bridged_meta.pkt_type = PACKET_ETH_TYPE_RCLT;   // Any dummy value is ok
+        // hdr.rclt.state = hdr.rclt.state;
+        // hdr.rclt.b1 = hdr.rclt.b1;
+        // hdr.rclt.b2 = hdr.rclt.b2;
+        // hdr.rclt.b3 = hdr.rclt.b3;
+        // This parameter should be reset after each recirculation;
+        hdr.rclt.discardBytes = 0;
+        ig_md.mark_to_rec = 0;
+    }     
 
     table t_setup_mirror_rclt {
         key = {
@@ -1274,6 +1326,7 @@ control IngressControl(
 // **********************************************************************************
 
     action a_filter_0_0(){
+        // cnt3.count(0);
         ig_md.filter0_found = 1;
         ig_md.filterKey_0_0 = hdr.key_0_0.c;
         ig_md.filterKey_0_1 = hdr.key_0_1.c;
@@ -1326,6 +1379,7 @@ control IngressControl(
         size = 512;
     }
     action a_filter_0_1(){
+        // cnt5.count(0);
         ig_md.filter0_found = 1;
         ig_md.filterKey_0_0 = hdr.key_1_0.c;
         ig_md.filterKey_0_1 = hdr.key_1_1.c;
@@ -1378,6 +1432,7 @@ control IngressControl(
         size = 512;
     }
     action a_filter_1_0(){
+        // cnt4.count(0);
         ig_md.filter1_found = 1;
         ig_md.filterKey_1_0 = hdr.key_0_0.c;
         ig_md.filterKey_1_1 = hdr.key_0_1.c;
@@ -1430,6 +1485,7 @@ control IngressControl(
         size = 512;
     }
     action a_filter_1_1(){
+        // cnt6.count(0);
         ig_md.filter1_found = 1;
         ig_md.filterKey_1_0 = hdr.key_1_0.c;
         ig_md.filterKey_1_1 = hdr.key_1_1.c;
@@ -1518,7 +1574,10 @@ control IngressControl(
         }
 
         // changes 
-        if(!hdr.rclt.isValid()){
+        if(hdr.rclt.isValid()){
+            a_retrive_state();
+        }else{
+            // dbug1.count(0);
             t_setup_mirror_rclt.apply();
         }
 
@@ -1613,7 +1672,7 @@ control IngressControl(
         if(!hdr.val_0_0.isValid()){
             hdr.val_0_0.c=0;
         }
-        index=Hash_0.get({hdr.val_0_0.c,hdr.val_0_1.c,hdr.val_0_2.c,hdr.val_0_3.c,hdr.val_0_4.c,hdr.val_0_5.c,hdr.val_0_6.c,hdr.val_0_l32.c,hdr.val_0_l16.c,hdr.val_0_l8.c });
+        // index=Hash_0.get({hdr.val_0_0.c,hdr.val_0_1.c,hdr.val_0_2.c,hdr.val_0_3.c,hdr.val_0_4.c,hdr.val_0_5.c,hdr.val_0_6.c,hdr.val_0_l32.c,hdr.val_0_l16.c,hdr.val_0_l8.c });
         // r_val_0_0.write(index,hdr.val_0_0.c );
         // r_val_0_1.write(index,hdr.val_0_1.c );
         // r_val_0_2.write(index,hdr.val_0_2.c );
@@ -1728,7 +1787,7 @@ control IngressControl(
         // r_val_1_l32.write(index,hdr.val_1_l32.c);
         // r_val_1_l16.write(index,hdr.val_1_l16.c);
         // r_val_1_l8.write(index,hdr.val_1_l8.c);
-        t_fixed_parse.apply();
+        // t_fixed_parse.apply();
         t_filter_0_0.apply();
         t_filter_0_1.apply();
         t_filter_1_0.apply();
@@ -1743,22 +1802,44 @@ control IngressControl(
             c_tot_cnt.count(0);
             hdr.rclt.rclt_count = max_rclt;
         }
+        // hdr.rclt.rclt_count = max_rclt;
+
+        //
+        // regD.write(0,hdr.rclt.rclt_count);
+        // regk0.write(0,hdr.rclt.k0);
+        // regk1.write(0,hdr.rclt.k1);
+        // regk2.write(0,hdr.ipv4.id);
+        // d0.write(0,hdr.key_0_0.c);
+        // d1.write(0,hdr.key_0_1.c);
+        // d2.write(0,hdr.key_0_2.c);
+        // d3.write(0,hdr.key_0_l16.c);
+        // d4.write(0,hdr.key_0_l32.c);
+        // d5.write(0,hdr.key_0_l8.c);
+        // d6.write(0,hdr.val_1_l8.c);
+        // d7.write(0,hdr.val_1_l16.c);
+        // d8.write(0,hdr.key_1_l16.c);
+        // d9.write(0,hdr.val_0_l32.c);
 
         if (hdr.rclt.rclt_count == max_rclt){
                 a_send_to_dummy_port();
-                check2.write(0,1);
+                // check2.write(0,1);
         }
         else{
-            check2.write(0,2);
+            // check2.write(0,2);
+            // dbug.count(0);
             t_save_state_and_recirculate.apply();
         }
 
-        check0.write(0,hdr.key_0_0.c);
-        check1.write(0,hdr.key_1_0.c);
+        // bit<32> y=hdr.ethernet.dstAddr[31:0];
+        // y=y+1;
+        // regB.write(0,y);
 
-        if (hdr.ipv4.isValid()){
-            t_forward.apply();
-        }
+        // check0.write(0,hdr.key_0_0.c);
+        // check1.write(0,hdr.key_1_0.c);
+
+        // if (hdr.ipv4.isValid()){
+        //     t_forward.apply();
+        // }
         // }
 
     }
