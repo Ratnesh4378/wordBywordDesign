@@ -27,16 +27,16 @@ def convert_to_hex(strings, max_key_size):
         hexValues.append("0x0")
         hexValues.append("0x0")
         hexValues.append("0x0")
-        for i in range(stages-1):
+        for i in range(stages):
             if curr_len == len(words[0])-1:
                 chunk=words[0][curr_len:curr_len+1]
                 hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
                 hexValues[stages+1]=hex_chunk
                 break
             elif curr_len+1 == len(words[0])-1:
-                chunk=words[0][curr_len:curr_len+2] 
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[stages]=hex_chunk
+                # chunk=words[0][curr_len:curr_len+2] 
+                # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                # hexValues[stages]=hex_chunk
                 #  Jugaad The last two bytes are not getting extracted properly
                 break
             elif curr_len+2 == len(words[0])-1:
@@ -44,20 +44,20 @@ def convert_to_hex(strings, max_key_size):
                 hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
                 hexValues[stages+1]=hex_chunk
                 # ********
-                chunk=words[0][curr_len+1:curr_len+3]
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[stages]=hex_chunk
+                # chunk=words[0][curr_len+1:curr_len+3]
+                # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                # hexValues[stages]=hex_chunk
                 # Jugaad , problem with extracting the last two bytes
                 break
 
             elif curr_len+3 == len(words[0])-1:
-                chunk=words[0][curr_len:curr_len+4]
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[stages-1]=hex_chunk
-                # jugaad goes from here
-                # chunk=words[0][curr_len+2:curr_len+4]
+                # chunk=words[0][curr_len:curr_len+4]
                 # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
                 # hexValues[stages-1]=hex_chunk
+                # jugaad goes from here
+                chunk=words[0][curr_len+2:curr_len+4]
+                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                hexValues[stages-1]=hex_chunk
                 break
             else:
                 chunk = words[0][curr_len:curr_len + 4]
@@ -66,7 +66,7 @@ def convert_to_hex(strings, max_key_size):
                 curr_len+=4
         curr_len=0
         idx=stages+2
-        for i in range(stages-1):
+        for i in range(stages):
             if curr_len ==len(words[1])-1:
                 chunk=words[1][curr_len:curr_len+1]
                 hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
@@ -74,9 +74,9 @@ def convert_to_hex(strings, max_key_size):
                 break
             elif curr_len+1 == len(words[1])-1:
                 # *********
-                chunk=words[1][curr_len:curr_len+2]
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[idx+stages]=hex_chunk
+                # chunk=words[1][curr_len:curr_len+2]
+                # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                # hexValues[idx+stages]=hex_chunk
                 # Jugaad 
                 break
             elif curr_len+2 == len(words[1])-1:
@@ -84,19 +84,19 @@ def convert_to_hex(strings, max_key_size):
                 hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
                 hexValues[idx+stages+1]=hex_chunk
                 # *******
-                chunk=words[1][curr_len+1:curr_len+3]
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[idx+stages]=hex_chunk
+                # chunk=words[1][curr_len+1:curr_len+3]
+                # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                # hexValues[idx+stages]=hex_chunk
                 # Jugaad
                 break
             elif curr_len+3 == len(words[1])-1:
-                chunk=words[1][curr_len:curr_len+4]
-                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
-                hexValues[idx+stages-1]=hex_chunk
-                # Jugaad goes from here,
-                # chunk=words[1][curr_len+2:curr_len+4]
+                # chunk=words[1][curr_len:curr_len+4]
                 # hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
                 # hexValues[idx+stages-1]=hex_chunk
+                # Jugaad goes from here,
+                chunk=words[1][curr_len+2:curr_len+4]
+                hex_chunk = '0x' + ''.join(format(ord(char), '02x') for char in chunk)
+                hexValues[idx+stages-1]=hex_chunk
                 break
             else:
                 chunk=words[1][curr_len:curr_len+4]
