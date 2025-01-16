@@ -6,7 +6,7 @@ def convert_to_hex(strings, max_key_size):
     
     :param strings: List of strings in the format XXXXXX:YYYYYY,
     :param max_key_size: Maximum key size in bytes.
-    :return: List of hexadecimal strings for each stage.
+    :return: List of hexadecimal strings.
     """
     stages=max_key_size//4
     output=[]
@@ -117,7 +117,7 @@ def save_to_file(converted_hexes, output_file,num_keys, num_stages):
         rules="""
 # Mirror Rules
 bfrt.mirror.cfg.add_with_normal(sid=1, direction="INGRESS", ucast_egress_port = 64, ucast_egress_port_valid = True, session_enable = True)
-bfrt.mirror.cfg.add_with_normal(sid=2, direction="INGRESS", ucast_egress_port = 65, ucast_egress_port_valid = True, session_enable = True)
+bfrt.mirror.cfg.add_with_normal(sid=2, direction="INGRESS", ucast_egress_port = 6, ucast_egress_port_valid = True, session_enable = True)
 
 # Recirculate, mirror and forwarding set up rules
 bfrt.temp.pipe.IngressControl.t_setup_mirror_rclt.add_with_a_setup_mirror_rclt("192.168.1.1", 2, 68)
@@ -129,10 +129,10 @@ bfrt.temp.pipe.IngressControl.t_arp.add_with_a_arp("192.168.1.1", "7a:5b:35:84:e
 bfrt.temp.pipe.IngressControl.t_arp.add_with_a_arp("192.168.1.2", "02:b5:24:d8:2a:58")
 """
         file.write(rules)
-        for i in range(num_keys):
-            for j in range(num_stages):
-                string="bfrt.temp.pipe.IngressControl.t_filter_"+str(i)+"_"+str(j)+".add_with_a_filter_"+str(i)+"_"+str(j)+"("
-                string += ", ".join(converted_hexes[i])
+        for i in range(num_stages):
+            for j in range(num_keys):
+                string="bfrt.temp.pipe.IngressControl.t_filter_"+str(i)+".add_with_a_filter_"+str(j)+"("
+                string += ", ".join(converted_hexes[j])
                 string += ")\n"
                 file.write(string)
         string="bfrt.temp.pipe.IngressControl.t_check.add_with_a_increase_counter("
@@ -158,9 +158,9 @@ def main():
     parser = argparse.ArgumentParser(description="Convert strings of the format XXXXXX:YYYYYY to hexadecimal stages.")
     parser.add_argument("--strings", nargs="+", required=True, help="List of strings to convert, formatted as XXXXXX:YYYYYY,")
     parser.add_argument("--max_key_size", type=int, required=True, help="Maximum key size in bytes.")
-    parser.add_argument("--output_file", type=str, required=True, help="File path to save the converted hexadecimal values.")
+    parser.add_argument("--output_file", type=str, required=True, help="File path to save the rules.")
     parser.add_argument("--num_keys", type=int, required=True, help="Number of keys.")
-    parser.add_argument("--num_stages", type=int, required=True, help="Number of stages.")
+    parser.add_argument("--num_stages", type=int, required=True, help="Number of keys extracted in one circulation")
 
     args = parser.parse_args()
 

@@ -3,10 +3,9 @@ import argparse
 def generate_p4_code(num_keys, num_stages, key_size, output_file):
     """
     Generates P4 code based on the provided table name, number of keys, number of stages, and key size.
-    :param table_name: Name of the table to generate.
-    :param num_keys: Number of key fields for the table.
-    :param num_stages: Number of stages in the pipeline.
-    :param key_size: Size of each key in bits.
+    :param num_keys: Total number of keys to be matched.
+    :param num_stages: Number of keys to be matched in one circulation.
+    :param key_size: Size of each key in bytes.
     :param output_file: File path to save the generated P4 code.
     """
     stages=key_size//4
@@ -605,37 +604,73 @@ control IngressControl(
     }
 """
     for i in range(num_keys):
-        for j in range(num_stages):
-            p4_code+="    action a_filter_"+str(i)+"_"+str(j)+"() {\n"
-            for k in range(stages-1):
-                p4_code+="        ig_md.filterKey_"+str(i)+"_"+str(k)+" = hdr.key_"+str(j)+"_"+str(k)+".c ;\n"
-            p4_code+="        ig_md.filterKey_"+str(i)+"_l32 = hdr.key_"+str(j)+"_l32.c ;\n"
-            p4_code+="        ig_md.filterKey_"+str(i)+"_l16 = hdr.key_"+str(j)+"_l16.c ;\n"
-            p4_code+="        ig_md.filterKey_"+str(i)+"_l8 = hdr.key_"+str(j)+"_l8.c ;\n"
-            for k in range(stages-1):
-                p4_code+="        ig_md.filterVal_"+str(i)+"_"+str(k)+" = hdr.val_"+str(j)+"_"+str(k)+".c ;\n"
-            p4_code+="        ig_md.filterVal_"+str(i)+"_l32 = hdr.val_"+str(j)+"_l32.c ;\n"
-            p4_code+="        ig_md.filterVal_"+str(i)+"_l16 = hdr.val_"+str(j)+"_l16.c ;\n"
-            p4_code+="        ig_md.filterVal_"+str(i)+"_l8 = hdr.val_"+str(j)+"_l8.c ;\n"
+        p4_code+="    action a_filter_"+str(i)+"() {\n"
+        # for k in range(stages-1):
+        #     p4_code+="        ig_md.filterKey_"+str(i)+"_"+str(k)+" = hdr.key_"+str(j)+"_"+str(k)+".c ;\n"
+        # p4_code+="        ig_md.filterKey_"+str(i)+"_l32 = hdr.key_"+str(j)+"_l32.c ;\n"
+        # p4_code+="        ig_md.filterKey_"+str(i)+"_l16 = hdr.key_"+str(j)+"_l16.c ;\n"
+        # p4_code+="        ig_md.filterKey_"+str(i)+"_l8 = hdr.key_"+str(j)+"_l8.c ;\n"
+        # for k in range(stages-1):
+        #     p4_code+="        ig_md.filterVal_"+str(i)+"_"+str(k)+" = hdr.val_"+str(j)+"_"+str(k)+".c ;\n"
+        # p4_code+="        ig_md.filterVal_"+str(i)+"_l32 = hdr.val_"+str(j)+"_l32.c ;\n"
+        # p4_code+="        ig_md.filterVal_"+str(i)+"_l16 = hdr.val_"+str(j)+"_l16.c ;\n"
+        # p4_code+="        ig_md.filterVal_"+str(i)+"_l8 = hdr.val_"+str(j)+"_l8.c ;\n"
 
-            p4_code+="        hdr.rclt.k"+str(i)+" = 1 ;\n    }\n"
+        p4_code+="        hdr.rclt.k"+str(i)+" = 1 ;\n    }\n"
 
-        # for j in range(num_stages):
-            p4_code+="    table t_filter_"+str(i)+"_"+str(j)+" {\n        key = {\n"
-            for k in range(stages-1):
-                p4_code+="            hdr.key_"+str(j)+"_"+str(k)+".c: exact;\n"
-            p4_code+="            hdr.key_"+str(j)+"_l32.c: exact;\n"
-            p4_code+="            hdr.key_"+str(j)+"_l16.c: exact;\n"
-            p4_code+="            hdr.key_"+str(j)+"_l8.c: exact;\n"
+    for i in range(num_stages):
+        p4_code+="    table t_filter_"+str(i)+" {\n        key = {\n"
+        for k in range(stages-1):
+            p4_code+="            hdr.key_"+str(i)+"_"+str(k)+".c: exact;\n"
+        p4_code+="            hdr.key_"+str(i)+"_l32.c: exact;\n"
+        p4_code+="            hdr.key_"+str(i)+"_l16.c: exact;\n"
+        p4_code+="            hdr.key_"+str(i)+"_l8.c: exact;\n"
 
-            for k in range(stages-1):
-                p4_code+="            hdr.val_"+str(j)+"_"+str(k)+".c: exact;\n"
-            p4_code+="            hdr.val_"+str(j)+"_l32.c: exact;\n"
-            p4_code+="            hdr.val_"+str(j)+"_l16.c: exact;\n"
-            p4_code+="            hdr.val_"+str(j)+"_l8.c: exact;\n"
+        for k in range(stages-1):
+            p4_code+="            hdr.val_"+str(i)+"_"+str(k)+".c: exact;\n"
+        p4_code+="            hdr.val_"+str(i)+"_l32.c: exact;\n"
+        p4_code+="            hdr.val_"+str(i)+"_l16.c: exact;\n"
+        p4_code+="            hdr.val_"+str(i)+"_l8.c: exact;\n"
 
-            p4_code+="        }\n        actions={\n            a_filter_"+str(i)+"_"+str(j)+";\n        }\n"
-            p4_code+="        size = 512;\n    }\n"
+        p4_code+="        }\n        actions={\n"
+        for j in range(num_keys):
+            p4_code+="            a_filter_"+str(j)+";\n"
+        p4_code+="        }\n"
+        p4_code+="        size = 1024;\n    }\n"
+
+    # for i in range(num_keys):
+    #     for j in range(num_stages):
+    #         p4_code+="    action a_filter_"+str(i)+"_"+str(j)+"() {\n"
+    #         for k in range(stages-1):
+    #             p4_code+="        ig_md.filterKey_"+str(i)+"_"+str(k)+" = hdr.key_"+str(j)+"_"+str(k)+".c ;\n"
+    #         p4_code+="        ig_md.filterKey_"+str(i)+"_l32 = hdr.key_"+str(j)+"_l32.c ;\n"
+    #         p4_code+="        ig_md.filterKey_"+str(i)+"_l16 = hdr.key_"+str(j)+"_l16.c ;\n"
+    #         p4_code+="        ig_md.filterKey_"+str(i)+"_l8 = hdr.key_"+str(j)+"_l8.c ;\n"
+    #         for k in range(stages-1):
+    #             p4_code+="        ig_md.filterVal_"+str(i)+"_"+str(k)+" = hdr.val_"+str(j)+"_"+str(k)+".c ;\n"
+    #         p4_code+="        ig_md.filterVal_"+str(i)+"_l32 = hdr.val_"+str(j)+"_l32.c ;\n"
+    #         p4_code+="        ig_md.filterVal_"+str(i)+"_l16 = hdr.val_"+str(j)+"_l16.c ;\n"
+    #         p4_code+="        ig_md.filterVal_"+str(i)+"_l8 = hdr.val_"+str(j)+"_l8.c ;\n"
+
+    #         p4_code+="        hdr.rclt.k"+str(i)+" = 1 ;\n    }\n"
+
+    #     # for j in range(num_stages):
+    #         p4_code+="    table t_filter_"+str(i)+"_"+str(j)+" {\n        key = {\n"
+    #         for k in range(stages-1):
+    #             p4_code+="            hdr.key_"+str(j)+"_"+str(k)+".c: exact;\n"
+    #         p4_code+="            hdr.key_"+str(j)+"_l32.c: exact;\n"
+    #         p4_code+="            hdr.key_"+str(j)+"_l16.c: exact;\n"
+    #         p4_code+="            hdr.key_"+str(j)+"_l8.c: exact;\n"
+
+    #         for k in range(stages-1):
+    #             p4_code+="            hdr.val_"+str(j)+"_"+str(k)+".c: exact;\n"
+    #         p4_code+="            hdr.val_"+str(j)+"_l32.c: exact;\n"
+    #         p4_code+="            hdr.val_"+str(j)+"_l16.c: exact;\n"
+    #         p4_code+="            hdr.val_"+str(j)+"_l8.c: exact;\n"
+
+    #         p4_code+="        }\n        actions={\n            a_filter_"+str(i)+"_"+str(j)+";\n        }\n"
+    #         p4_code+="        size = 64;\n    }\n"
+
 
     p4_code+="""
     action a_increase_counter(){
@@ -708,16 +743,17 @@ control IngressControl(
         for j in range(stages-1):
             p4_code+="        if(!hdr.val_"+str(i)+"_"+str(j)+".isValid()){\n            hdr.val_"+str(i)+"_"+str(j)+".c=0;\n        }\n"
 
-    for i in range(num_keys):
-        for j in range(num_stages):
-            p4_code+="        t_filter_"+str(i)+"_"+str(j)+".apply();\n"
+    # for i in range(num_keys):
+    for j in range(num_stages):
+        # p4_code+="        t_filter_"+str(i)+"_"+str(j)+".apply();\n"
+        p4_code+="        t_filter_"+str(j)+".apply();\n"
     
     
     p4_code+="        max_rclt = 10;\n"
     p4_code+="        rclt_tot_cnt.count(0);\n"
     p4_code+="        t_check.apply();\n"
     p4_code+="""
-        if (hdr.rclt.rclt_count == max_rclt){
+        if (hdr.rclt.rclt_count >= max_rclt){
                 a_send_to_dummy_port();
         }
         else{
@@ -744,9 +780,9 @@ Switch(pipe) main;
 def main():
     parser = argparse.ArgumentParser(description="Generate P4 code with customizable parameters.")
     # parser.add_argument("--table_name", type=str, required=True, help="Name of the table.")
-    parser.add_argument("--num_keys", type=int, required=True, help="Number of key fields for the table.")
-    parser.add_argument("--num_stages", type=int, required=True, help="Number of stages in the pipeline.")
-    parser.add_argument("--key_size", type=int, required=True, help="Size of each key in bits.")
+    parser.add_argument("--num_keys", type=int, required=True, help="Total number of keys to be matched")
+    parser.add_argument("--num_stages", type=int, required=True, help="Number of keys to be matched in one circulation.")
+    parser.add_argument("--key_size", type=int, required=True, help="Size of each key in bytes.")
     parser.add_argument("--output_file", type=str, required=True, help="File path to save the generated P4 code.")
 
     args = parser.parse_args()
